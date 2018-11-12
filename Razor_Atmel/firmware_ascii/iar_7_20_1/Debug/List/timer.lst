@@ -1,0 +1,797 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.20.1.7305/W32 for ARM        12/Nov/2018  15:32:09
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  D:\yv\EIE\X\Razor_Atmel\firmware_common\drivers\timer.c
+#    Command line =  
+#        D:\yv\EIE\X\Razor_Atmel\firmware_common\drivers\timer.c -D EIE1
+#        --preprocess=cl
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\Debug\List\ -lC
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\Debug\List\ -o
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M3 -e --fpu=None
+#        --dlib_config D:\yv\EIE\arm\INC\c\DLib_Config_Normal.h -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\ -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\..\bsp\ -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\..\drivers\ -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\..\application\ -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\..\..\firmware_common\
+#        -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\..\..\firmware_common\application\
+#        -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\..\..\firmware_common\cmsis\
+#        -I
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\..\..\firmware_common\drivers\
+#        -On --use_c++_inline --require_prototypes -I
+#        D:\yv\EIE\arm\CMSIS\Include\
+#    List file    =  
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\Debug\List\timer.lst
+#    Object file  =  
+#        D:\yv\EIE\X\Razor_Atmel\firmware_ascii\iar_7_20_1\Debug\Obj\timer.o
+#
+###############################################################################
+
+D:\yv\EIE\X\Razor_Atmel\firmware_common\drivers\timer.c
+      1          /**********************************************************************************************************************
+      2          File: timer.c                                                                
+      3          
+      4          Description:
+      5          Provide easy access to setting up and running the Timer Counter (TC) Peripherals.
+      6          
+      7          ------------------------------------------------------------------------------------------------------------------------
+      8          API:
+      9          
+     10          Public functions:
+     11          void TimerSet(TimerChannelType eTimerChannel_, u16 u16TimerValue_)
+     12          e.g. 
+     13          TimerSet(TIMER_CHANNEL1, 0xFFFF);
+     14          
+     15          void TimerStart(TimerChannelType eTimerChannel_)
+     16          e.g.
+     17          TimeStart(TIMER_CHANNEL1);
+     18          
+     19          void TimerStop(TimerChannelType eTimerChannel_)
+     20          e.g.
+     21          TimerStop(TIMER_CHANNEL1);
+     22          
+     23          u16 TimerGetTime(TimerChannelType eTimerChannel_)
+     24          e.g.
+     25          u16 u16Timer1CurrentValue;
+     26          u16Timer1CurrentValue = TimerGetTime(TIMER_CHANNEL1);
+     27          
+     28          void TimerAssignCallback(TimerChannelType eTimerChannel_, fnCode_type fpUserCallback_)
+     29          e.g.
+     30          TimerAssignCallback(TIMER_CHANNEL1, UserAppCallback);
+     31          where UserAppCallBack is defined in a user task:
+     32          void UserAppCallBack(void)
+     33          Note: any callback should execute as quickly as possible since it runs during
+     34          the timer interrupt handler.
+     35          
+     36          
+     37          Protected System functions:
+     38          void TimerInitialize(void)
+     39          Runs required initialzation for the task.  Should only be called once in main init section.
+     40          
+     41          void TimerRunActiveState(void)
+     42          Runs current task state.  Should only be called once in main loop.
+     43          
+     44          
+     45          **********************************************************************************************************************/
+     46          
+     47          #include "configuration.h"
+
+   \                                 In section .text, align 2, keep-with-next
+   \   static __interwork __softfp void NVIC_EnableIRQ(IRQn_Type)
+   \                     NVIC_EnableIRQ: (+1)
+   \   00000000   0x2101             MOVS     R1,#+1
+   \   00000002   0xF010 0x021F      ANDS     R2,R0,#0x1F
+   \   00000006   0x4091             LSLS     R1,R1,R2
+   \   00000008   0x....             LDR.N    R2,??DataTable9  ;; 0xe000e100
+   \   0000000A   0xB240             SXTB     R0,R0            ;; SignExt  R0,R0,#+24,#+24
+   \   0000000C   0x0943             LSRS     R3,R0,#+5
+   \   0000000E   0xF842 0x1023      STR      R1,[R2, R3, LSL #+2]
+   \   00000012   0x4770             BX       LR               ;; return
+
+   \                                 In section .text, align 2, keep-with-next
+   \   static __interwork __softfp void NVIC_ClearPendingIRQ(IRQn_Type)
+   \                     NVIC_ClearPendingIRQ: (+1)
+   \   00000000   0x2101             MOVS     R1,#+1
+   \   00000002   0xF010 0x021F      ANDS     R2,R0,#0x1F
+   \   00000006   0x4091             LSLS     R1,R1,R2
+   \   00000008   0x....             LDR.N    R2,??DataTable9_1  ;; 0xe000e280
+   \   0000000A   0xB240             SXTB     R0,R0            ;; SignExt  R0,R0,#+24,#+24
+   \   0000000C   0x0943             LSRS     R3,R0,#+5
+   \   0000000E   0xF842 0x1023      STR      R1,[R2, R3, LSL #+2]
+   \   00000012   0x4770             BX       LR               ;; return
+     48          
+     49          /***********************************************************************************************************************
+     50          Global variable definitions with scope across entire project.
+     51          All Global variable names shall start with "G_"
+     52          ***********************************************************************************************************************/
+     53          /* New variables */
+
+   \                                 In section .bss, align 4
+     54          volatile u32 G_u32TimerFlags;                          /* Global state flags */
+   \                     G_u32TimerFlags:
+   \   00000000                      DS8 4
+     55          
+     56          
+     57          /*--------------------------------------------------------------------------------------------------------------------*/
+     58          /* Existing variables (defined in other files -- should all contain the "extern" keyword) */
+     59          extern volatile u32 G_u32SystemFlags;                  /* From main.c */
+     60          extern volatile u32 G_u32ApplicationFlags;             /* From main.c */
+     61          
+     62          extern volatile u32 G_u32SystemTime1ms;                /* From board-specific source file */
+     63          extern volatile u32 G_u32SystemTime1s;                 /* From board-specific source file */
+     64          
+     65          
+     66          /***********************************************************************************************************************
+     67          Global variable definitions with scope limited to this local application.
+     68          Variable names shall start with "Timer_" and be declared as static.
+     69          ***********************************************************************************************************************/
+
+   \                                 In section .bss, align 4
+     70          static fnCode_type Timer_StateMachine;            /* The state machine function pointer */
+   \                     Timer_StateMachine:
+   \   00000000                      DS8 4
+
+   \                                 In section .bss, align 4
+     71          static fnCode_type fpTimer1Callback;              /* Timer1 ISR callback function pointer */
+   \                     fpTimer1Callback:
+   \   00000000                      DS8 4
+     72          
+     73          //static u32 Timer_u32Timeout;                      /* Timeout counter used across states */
+     74          
+
+   \                                 In section .bss, align 4
+     75          static u32 Timer_u32Timer1Counter = 0;            /* Track instances of The TC1 interrupt handler */
+   \                     Timer_u32Timer1Counter:
+   \   00000000                      DS8 4
+     76          
+     77          
+     78          /**********************************************************************************************************************
+     79          Function Definitions
+     80          **********************************************************************************************************************/
+     81          
+     82          /*--------------------------------------------------------------------------------------------------------------------*/
+     83          /* Public functions                                                                                                   */
+     84          /*--------------------------------------------------------------------------------------------------------------------*/
+     85          
+     86          /*----------------------------------------------------------------------------------------------------------------------
+     87          Function: TimerSet
+     88          
+     89          Description
+     90          Sets the timer tick period (interrupt rate).
+     91          
+     92          Requires:
+     93            - eTimerChannel_ holds a valid channel
+     94            - u16TimerValue_ x in ticks
+     95          
+     96          Promises:
+     97            - Updates TC_RC value with u16TimerValue_
+     98          */
+
+   \                                 In section .text, align 2, keep-with-next
+     99          void TimerSet(TimerChannelType eTimerChannel_, u16 u16TimerValue_)
+    100          {
+    101            /* Build the offset to the selected peripheral */
+    102            u32 u32TimerBaseAddress = (u32)AT91C_BASE_TC0;
+   \                     TimerSet: (+1)
+   \   00000000   0x....             LDR.N    R2,??DataTable9_2  ;; 0x40080000
+    103            u32TimerBaseAddress += (u32)eTimerChannel_;
+   \   00000002   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   00000004   0x1882             ADDS     R2,R0,R2
+    104          
+    105            /* Load the new timer value */
+    106            (AT91_CAST(AT91PS_TC)u32TimerBaseAddress)->TC_RC = (u32)(u16TimerValue_ & 0x0000FFFF);
+   \   00000006   0xB289             UXTH     R1,R1            ;; ZeroExt  R1,R1,#+16,#+16
+   \   00000008   0x61D1             STR      R1,[R2, #+28]
+    107          
+    108          } /* end TimerSet() */
+   \   0000000A   0x4770             BX       LR               ;; return
+    109          
+    110          
+    111          /*----------------------------------------------------------------------------------------------------------------------
+    112          Function: TimerStart
+    113          
+    114          Description
+    115          Starts the designated Timer.
+    116          
+    117          Requires:
+    118            - eTimerChannel_ is the timer to start
+    119          
+    120          Promises:
+    121            - Specified channel on Timer is set to run; if already running it remains running
+    122            - Does NOT reset the timer value
+    123          */
+
+   \                                 In section .text, align 2, keep-with-next
+    124          void TimerStart(TimerChannelType eTimerChannel_)
+    125          {
+    126            /* Build the offset to the selected peripheral */
+    127            u32 u32TimerBaseAddress = (u32)AT91C_BASE_TC0;
+   \                     TimerStart: (+1)
+   \   00000000   0x....             LDR.N    R1,??DataTable9_2  ;; 0x40080000
+    128            u32TimerBaseAddress += (u32)eTimerChannel_;
+   \   00000002   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   00000004   0x1841             ADDS     R1,R0,R1
+    129          
+    130            /* Ensure clock is enabled and triggered */
+    131            (AT91_CAST(AT91PS_TC)u32TimerBaseAddress)->TC_CCR |= (AT91C_TC_CLKEN | AT91C_TC_SWTRG);
+   \   00000006   0x680A             LDR      R2,[R1, #+0]
+   \   00000008   0xF052 0x0205      ORRS     R2,R2,#0x5
+   \   0000000C   0x600A             STR      R2,[R1, #+0]
+    132            
+    133          } /* end TimerStart() */
+   \   0000000E   0x4770             BX       LR               ;; return
+    134          
+    135          
+    136          /*----------------------------------------------------------------------------------------------------------------------
+    137          Function: TimerStop
+    138          
+    139          Description
+    140          Stops the designated Timer.
+    141          
+    142          Requires:
+    143            - eTimerChannel_ is the timer to stop
+    144          
+    145          Promises:
+    146            - Specified timer is stopped; if already stopped it remains stopped
+    147            - Does NOT reset the timer value
+    148          */
+
+   \                                 In section .text, align 2, keep-with-next
+    149          void TimerStop(TimerChannelType eTimerChannel_)
+    150          {
+    151            /* Build the offset to the selected peripheral */
+    152            u32 u32TimerBaseAddress = (u32)AT91C_BASE_TC0;
+   \                     TimerStop: (+1)
+   \   00000000   0x....             LDR.N    R1,??DataTable9_2  ;; 0x40080000
+    153            u32TimerBaseAddress += (u32)eTimerChannel_;
+   \   00000002   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   00000004   0x1841             ADDS     R1,R0,R1
+    154            
+    155            /* Ensure clock is disabled */
+    156            (AT91_CAST(AT91PS_TC)u32TimerBaseAddress)->TC_CCR |= AT91C_TC_CLKDIS;
+   \   00000006   0x680A             LDR      R2,[R1, #+0]
+   \   00000008   0xF052 0x0202      ORRS     R2,R2,#0x2
+   \   0000000C   0x600A             STR      R2,[R1, #+0]
+    157            
+    158          } /* end TimerStop */
+   \   0000000E   0x4770             BX       LR               ;; return
+    159          
+    160          
+    161          /*----------------------------------------------------------------------------------------------------------------------
+    162          Function: TimerGetTime
+    163          
+    164          Description
+    165          Returns the current count.
+    166          
+    167          Requires:
+    168            - eTimerChannel_ is the timer to query
+    169          
+    170          Promises:
+    171            - Current 16 bit timer value is returned
+    172          */
+
+   \                                 In section .text, align 2, keep-with-next
+    173          u16 TimerGetTime(TimerChannelType eTimerChannel_)
+    174          {
+   \                     TimerGetTime: (+1)
+   \   00000000   0x0001             MOVS     R1,R0
+    175           
+    176            /* Build the offset to the selected peripheral */
+    177            u32 u32TimerBaseAddress = (u32)AT91C_BASE_TC0;
+   \   00000002   0x....             LDR.N    R0,??DataTable9_2  ;; 0x40080000
+    178            u32TimerBaseAddress += (u32)eTimerChannel_;
+   \   00000004   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   00000006   0x1808             ADDS     R0,R1,R0
+    179            
+    180            /* Read and format the timer count */
+    181            return ((u16)( (AT91_CAST(AT91PS_TC)u32TimerBaseAddress)->TC_CV & 0x0000FFFF));
+   \   00000008   0x6900             LDR      R0,[R0, #+16]
+   \   0000000A   0xB280             UXTH     R0,R0            ;; ZeroExt  R0,R0,#+16,#+16
+   \   0000000C   0x4770             BX       LR               ;; return
+    182            
+    183          } /* end TimerGetTime */
+    184          
+    185          
+    186          /*----------------------------------------------------------------------------------------------------------------------
+    187          Function: TimerAssignCallback
+    188          
+    189          Description
+    190          Allows user to specify a custom callback function for when the Timer interrupt occurs.
+    191          
+    192          Requires:
+    193            - eTimerChannel_ is the channel to which the callback will be assigned
+    194            - fpUserCallback_ is the function address (name) for the user's callback
+    195          
+    196          Promises:
+    197            - fpTimerxCallback loaded with fpUserCallback_
+    198          */
+
+   \                                 In section .text, align 2, keep-with-next
+    199          void TimerAssignCallback(TimerChannelType eTimerChannel_, fnCode_type fpUserCallback_)
+    200          {
+   \                     TimerAssignCallback: (+1)
+   \   00000000   0xB538             PUSH     {R3-R5,LR}
+   \   00000002   0x0004             MOVS     R4,R0
+   \   00000004   0x000D             MOVS     R5,R1
+    201            switch(eTimerChannel_)
+   \   00000006   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000008   0x0020             MOVS     R0,R4
+   \   0000000A   0x2800             CMP      R0,#+0
+   \   0000000C   0xD004             BEQ.N    ??TimerAssignCallback_0
+   \   0000000E   0x2840             CMP      R0,#+64
+   \   00000010   0xD003             BEQ.N    ??TimerAssignCallback_1
+   \   00000012   0x2880             CMP      R0,#+128
+   \   00000014   0xD004             BEQ.N    ??TimerAssignCallback_2
+   \   00000016   0xE004             B.N      ??TimerAssignCallback_3
+    202            {
+    203              case TIMER_CHANNEL0:
+    204              {
+    205                break;
+   \                     ??TimerAssignCallback_0: (+1)
+   \   00000018   0xE006             B.N      ??TimerAssignCallback_4
+    206              }
+    207              case TIMER_CHANNEL1:
+    208              {
+    209                fpTimer1Callback = fpUserCallback_;
+   \                     ??TimerAssignCallback_1: (+1)
+   \   0000001A   0x....             LDR.N    R0,??DataTable9_3
+   \   0000001C   0x6005             STR      R5,[R0, #+0]
+    210                break;
+   \   0000001E   0xE003             B.N      ??TimerAssignCallback_4
+    211              }
+    212              case TIMER_CHANNEL2:
+    213              {
+    214                break;
+   \                     ??TimerAssignCallback_2: (+1)
+   \   00000020   0xE002             B.N      ??TimerAssignCallback_4
+    215              }
+    216              default:
+    217              {
+    218                DebugPrintf("Invalid channel\n\r");
+   \                     ??TimerAssignCallback_3: (+1)
+   \   00000022   0x....             LDR.N    R0,??DataTable9_4
+   \   00000024   0x.... 0x....      BL       DebugPrintf
+    219              }
+    220            } /* end switch(eTimerChannel_) */
+    221            
+    222          } /* end TimerAssignCallback */
+   \                     ??TimerAssignCallback_4: (+1)
+   \   00000028   0xBD31             POP      {R0,R4,R5,PC}    ;; return
+    223          
+    224          
+    225          /*--------------------------------------------------------------------------------------------------------------------*/
+    226          /* Protected functions                                                                                                */
+    227          /*--------------------------------------------------------------------------------------------------------------------*/
+    228          
+    229          /*--------------------------------------------------------------------------------------------------------------------
+    230          Function: TimerInitialize
+    231          
+    232          Description:
+    233          Initializes the State Machine and its variables.
+    234          
+    235          Requires:
+    236            -
+    237          
+    238          Promises:
+    239            - Timer 1 is configured per timer.h INIT settings
+    240          */
+
+   \                                 In section .text, align 2, keep-with-next
+    241          void TimerInitialize(void)
+    242          {
+   \                     TimerInitialize: (+1)
+   \   00000000   0xB500             PUSH     {LR}
+   \   00000002   0xB087             SUB      SP,SP,#+28
+    243            u8 au8TimerStarted[] = "Timer1 initialized\n\r";
+   \   00000004   0xA800             ADD      R0,SP,#+0
+   \   00000006   0x....             LDR.N    R1,??DataTable9_5
+   \   00000008   0x2215             MOVS     R2,#+21
+   \   0000000A   0x.... 0x....      BL       __aeabi_memcpy
+    244          
+    245            /* Channel 0 settings not configured at this time */
+    246          
+    247            /* Load the block configuration register */
+    248            AT91C_BASE_TCB1->TCB_BMR = TCB_BMR_INIT;
+   \   0000000E   0x....             LDR.N    R0,??DataTable9_6  ;; 0x100800
+   \   00000010   0x....             LDR.N    R1,??DataTable9_7  ;; 0x40080104
+   \   00000012   0x6008             STR      R0,[R1, #+0]
+    249           
+    250            /* Load Channel 1 settings and set the default callback */
+    251            AT91C_BASE_TC1->TC_CMR = TC1_CMR_INIT;
+   \   00000014   0x....             LDR.N    R0,??DataTable9_8  ;; 0xcc403
+   \   00000016   0x....             LDR.N    R1,??DataTable9_9  ;; 0x40080044
+   \   00000018   0x6008             STR      R0,[R1, #+0]
+    252            AT91C_BASE_TC1->TC_RC  = TC1_RC_INIT;
+   \   0000001A   0x2025             MOVS     R0,#+37
+   \   0000001C   0x....             LDR.N    R1,??DataTable9_10  ;; 0x4008005c
+   \   0000001E   0x6008             STR      R0,[R1, #+0]
+    253            AT91C_BASE_TC1->TC_IER = TC1_IER_INIT;
+   \   00000020   0x2010             MOVS     R0,#+16
+   \   00000022   0x....             LDR.N    R1,??DataTable9_11  ;; 0x40080064
+   \   00000024   0x6008             STR      R0,[R1, #+0]
+    254            AT91C_BASE_TC1->TC_IDR = TC1_IDR_INIT;
+   \   00000026   0x20EF             MOVS     R0,#+239
+   \   00000028   0x....             LDR.N    R1,??DataTable9_12  ;; 0x40080068
+   \   0000002A   0x6008             STR      R0,[R1, #+0]
+    255            AT91C_BASE_TC1->TC_CCR = TC1_CCR_INIT;
+   \   0000002C   0x2002             MOVS     R0,#+2
+   \   0000002E   0x....             LDR.N    R1,??DataTable9_13  ;; 0x40080040
+   \   00000030   0x6008             STR      R0,[R1, #+0]
+    256           
+    257            fpTimer1Callback = TimerDefaultCallback;
+   \   00000032   0x....             LDR.N    R0,??DataTable9_14
+   \   00000034   0x....             LDR.N    R1,??DataTable9_3
+   \   00000036   0x6008             STR      R0,[R1, #+0]
+    258          
+    259            /* Channel 2 settings not configured at this time */
+    260            
+    261            /* If good initialization, set state to Idle */
+    262            if( 1 )
+    263            {
+    264              /* Enable required interrupts */
+    265              NVIC_ClearPendingIRQ(IRQn_TC1);
+   \   00000038   0x2017             MOVS     R0,#+23
+   \   0000003A   0x.... 0x....      BL       NVIC_ClearPendingIRQ
+    266              NVIC_EnableIRQ(IRQn_TC1);
+   \   0000003E   0x2017             MOVS     R0,#+23
+   \   00000040   0x.... 0x....      BL       NVIC_EnableIRQ
+    267              Timer_StateMachine = TimerSM_Idle;
+   \   00000044   0x.... 0x....      ADR.W    R0,TimerSM_Idle
+   \   00000048   0x....             LDR.N    R1,??DataTable9_15
+   \   0000004A   0x6008             STR      R0,[R1, #+0]
+    268              DebugPrintf(au8TimerStarted);
+   \   0000004C   0xA800             ADD      R0,SP,#+0
+   \   0000004E   0x.... 0x....      BL       DebugPrintf
+    269              
+    270              /* Flag that the Timer task is ready */
+    271              G_u32ApplicationFlags |= _APPLICATION_FLAGS_TIMER;
+   \   00000052   0x....             LDR.N    R0,??DataTable9_16
+   \   00000054   0x6800             LDR      R0,[R0, #+0]
+   \   00000056   0xF050 0x0020      ORRS     R0,R0,#0x20
+   \   0000005A   0x....             LDR.N    R1,??DataTable9_16
+   \   0000005C   0x6008             STR      R0,[R1, #+0]
+    272            }
+    273            else
+    274            {
+    275              /* The task isn't properly initialized, so shut it down and don't run */
+    276              Timer_StateMachine = TimerSM_FailedInit;
+    277            }
+    278          
+    279          } /* end TimerInitialize() */
+   \   0000005E   0xB007             ADD      SP,SP,#+28
+   \   00000060   0xBD00             POP      {PC}             ;; return
+    280          
+    281            
+    282          /*----------------------------------------------------------------------------------------------------------------------
+    283          Function TimerRunActiveState()
+    284          
+    285          Description:
+    286          Selects and runs one iteration of the current state in the state machine.
+    287          All state machines have a TOTAL of 1ms to execute, so on average n state machines
+    288          may take 1ms / n to execute.
+    289          
+    290          Requires:
+    291            - State machine function pointer points at current state
+    292          
+    293          Promises:
+    294            - Calls the function to pointed by the state machine function pointer
+    295          */
+
+   \                                 In section .text, align 2, keep-with-next
+    296          void TimerRunActiveState(void)
+    297          {
+   \                     TimerRunActiveState: (+1)
+   \   00000000   0xB580             PUSH     {R7,LR}
+    298            Timer_StateMachine();
+   \   00000002   0x....             LDR.N    R0,??DataTable9_15
+   \   00000004   0x6800             LDR      R0,[R0, #+0]
+   \   00000006   0x4780             BLX      R0
+    299          
+    300          } /* end TimerRunActiveState */
+   \   00000008   0xBD01             POP      {R0,PC}          ;; return
+    301          
+    302          
+    303          /*--------------------------------------------------------------------------------------------------------------------*/
+    304          /* Private functions                                                                                                  */
+    305          /*--------------------------------------------------------------------------------------------------------------------*/
+    306            
+    307          /*----------------------------------------------------------------------------------------------------------------------
+    308          Function TimerDefaultCallback()
+    309          
+    310          Description:
+    311          An empty function that the Timer Callback points to.  Expected that the 
+    312          user will set their own.
+    313          
+    314          Requires:
+    315            - 
+    316          
+    317          Promises:
+    318            - 
+    319          */
+
+   \                                 In section .text, align 2
+    320          inline void TimerDefaultCallback(void)
+    321          {
+    322          } /* End TimerDefaultCallback() */
+   \                     TimerDefaultCallback: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    323          
+    324          
+    325          /*----------------------------------------------------------------------------------------------------------------------
+    326          ISR: TC1_IrqHandler
+    327          
+    328          Description:
+    329          Parses the TC1 interrupts and handles them appropriately.  Note that all TC1
+    330          interrupts are ORed and will trigger this handler, therefore any expected interrupt 
+    331          that is enabled must be parsed out and handled.
+    332          
+    333          Requires:
+    334            - 
+    335          
+    336          Promises:
+    337            - If Channel1 RC: Timer Channel 1 is reset
+    338          */
+
+   \                                 In section .text, align 2, keep-with-next
+    339          void TC1_IrqHandler(void)
+    340          {
+   \                     TC1_IrqHandler: (+1)
+   \   00000000   0xB580             PUSH     {R7,LR}
+    341            /* Check for RC compare interrupt - reading TC_SR clears the bit if set */
+    342            if(AT91C_BASE_TC1->TC_SR & AT91C_TC_CPCS)
+   \   00000002   0x....             LDR.N    R0,??DataTable9_17  ;; 0x40080060
+   \   00000004   0x6800             LDR      R0,[R0, #+0]
+   \   00000006   0x06C0             LSLS     R0,R0,#+27
+   \   00000008   0xD507             BPL.N    ??TC1_IrqHandler_0
+    343            {
+    344              Timer_u32Timer1Counter++;
+   \   0000000A   0x....             LDR.N    R0,??DataTable9_18
+   \   0000000C   0x6800             LDR      R0,[R0, #+0]
+   \   0000000E   0x1C40             ADDS     R0,R0,#+1
+   \   00000010   0x....             LDR.N    R1,??DataTable9_18
+   \   00000012   0x6008             STR      R0,[R1, #+0]
+    345              fpTimer1Callback();
+   \   00000014   0x....             LDR.N    R0,??DataTable9_3
+   \   00000016   0x6800             LDR      R0,[R0, #+0]
+   \   00000018   0x4780             BLX      R0
+    346            }
+    347          
+    348            /* Clear the TC0 pending flag and exit */
+    349            NVIC->ICPR[0] = (1 << IRQn_TC1);
+   \                     ??TC1_IrqHandler_0: (+1)
+   \   0000001A   0xF45F 0x0000      MOVS     R0,#+8388608
+   \   0000001E   0x....             LDR.N    R1,??DataTable9_1  ;; 0xe000e280
+   \   00000020   0x6008             STR      R0,[R1, #+0]
+    350            
+    351          } /* end TC1_IrqHandler() */
+   \   00000022   0xBD01             POP      {R0,PC}          ;; return
+    352          
+    353          
+    354          /**********************************************************************************************************************
+    355          State Machine Function Definitions
+    356          **********************************************************************************************************************/
+    357          
+    358          /*-------------------------------------------------------------------------------------------------------------------*/
+    359          /* Wait for a message to be queued */
+
+   \                                 In section .text, align 4, keep-with-next
+    360          static void TimerSM_Idle(void)
+    361          {
+    362             
+    363          } /* end TimerSM_Idle() */
+   \                     TimerSM_Idle: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9:
+   \   00000000   0xE000E100         DC32     0xe000e100
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_1:
+   \   00000000   0xE000E280         DC32     0xe000e280
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_2:
+   \   00000000   0x40080000         DC32     0x40080000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_3:
+   \   00000000   0x........         DC32     fpTimer1Callback
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_4:
+   \   00000000   0x........         DC32     ?_0
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_5:
+   \   00000000   0x........         DC32     ?_1
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_6:
+   \   00000000   0x00100800         DC32     0x100800
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_7:
+   \   00000000   0x40080104         DC32     0x40080104
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_8:
+   \   00000000   0x000CC403         DC32     0xcc403
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_9:
+   \   00000000   0x40080044         DC32     0x40080044
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_10:
+   \   00000000   0x4008005C         DC32     0x4008005c
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_11:
+   \   00000000   0x40080064         DC32     0x40080064
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_12:
+   \   00000000   0x40080068         DC32     0x40080068
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_13:
+   \   00000000   0x40080040         DC32     0x40080040
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_14:
+   \   00000000   0x........         DC32     TimerDefaultCallback
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_15:
+   \   00000000   0x........         DC32     Timer_StateMachine
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_16:
+   \   00000000   0x........         DC32     G_u32ApplicationFlags
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_17:
+   \   00000000   0x40080060         DC32     0x40080060
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable9_18:
+   \   00000000   0x........         DC32     Timer_u32Timer1Counter
+
+   \                                 In section .rodata, align 4
+   \                     ?_0:
+   \   00000000   0x49 0x6E          DC8 "Invalid channel\012\015"
+   \              0x76 0x61    
+   \              0x6C 0x69    
+   \              0x64 0x20    
+   \              0x63 0x68    
+   \              0x61 0x6E    
+   \              0x6E 0x65    
+   \              0x6C 0x0A    
+   \              0x0D 0x00    
+   \   00000012   0x00 0x00          DC8 0, 0
+
+   \                                 In section .rodata, align 4
+   \                     ?_1:
+   \   00000000   0x54 0x69          DC8 "Timer1 initialized\012\015"
+   \              0x6D 0x65    
+   \              0x72 0x31    
+   \              0x20 0x69    
+   \              0x6E 0x69    
+   \              0x74 0x69    
+   \              0x61 0x6C    
+   \              0x69 0x7A    
+   \              0x65 0x64    
+   \              0x0A 0x0D    
+   \              0x00         
+   \   00000015   0x00 0x00          DC8 0, 0, 0
+   \              0x00         
+    364               
+    365          
+    366          #if 0
+    367          /*-------------------------------------------------------------------------------------------------------------------*/
+    368          /* Handle an error */
+    369          static void TimerSM_Error(void)          
+    370          {
+    371            
+    372          } /* end TimerSM_Error() */
+    373          #endif
+    374          
+    375          /*-------------------------------------------------------------------------------------------------------------------*/
+    376          /* State to sit in if init failed */
+    377          static void TimerSM_FailedInit(void)          
+    378          {
+    379              
+    380          } /* end TimerSM_FailedInit() */
+    381          
+    382          
+    383          /*--------------------------------------------------------------------------------------------------------------------*/
+    384          /* End of File                                                                                                        */
+    385          /*--------------------------------------------------------------------------------------------------------------------*/
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   NVIC_ClearPendingIRQ
+       0   NVIC_EnableIRQ
+       8   TC1_IrqHandler
+         8   -- Indirect call
+      16   TimerAssignCallback
+        16   -> DebugPrintf
+       0   TimerDefaultCallback
+       0   TimerGetTime
+      32   TimerInitialize
+        32   -> DebugPrintf
+        32   -> NVIC_ClearPendingIRQ
+        32   -> NVIC_EnableIRQ
+        32   -> __aeabi_memcpy
+       8   TimerRunActiveState
+         8   -- Indirect call
+       0   TimerSM_Idle
+       0   TimerSet
+       0   TimerStart
+       0   TimerStop
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable9
+       4  ??DataTable9_1
+       4  ??DataTable9_10
+       4  ??DataTable9_11
+       4  ??DataTable9_12
+       4  ??DataTable9_13
+       4  ??DataTable9_14
+       4  ??DataTable9_15
+       4  ??DataTable9_16
+       4  ??DataTable9_17
+       4  ??DataTable9_18
+       4  ??DataTable9_2
+       4  ??DataTable9_3
+       4  ??DataTable9_4
+       4  ??DataTable9_5
+       4  ??DataTable9_6
+       4  ??DataTable9_7
+       4  ??DataTable9_8
+       4  ??DataTable9_9
+      20  ?_0
+      24  ?_1
+       4  G_u32TimerFlags
+      20  NVIC_ClearPendingIRQ
+      20  NVIC_EnableIRQ
+      36  TC1_IrqHandler
+      42  TimerAssignCallback
+       2  TimerDefaultCallback
+      14  TimerGetTime
+      98  TimerInitialize
+      10  TimerRunActiveState
+       2  TimerSM_Idle
+      12  TimerSet
+      16  TimerStart
+      16  TimerStop
+       4  Timer_StateMachine
+       4  Timer_u32Timer1Counter
+       4  fpTimer1Callback
+
+ 
+  16 bytes in section .bss
+  44 bytes in section .rodata
+ 364 bytes in section .text
+ 
+ 362 bytes of CODE  memory (+ 2 bytes shared)
+  44 bytes of CONST memory
+  16 bytes of DATA  memory
+
+Errors: none
+Warnings: none
